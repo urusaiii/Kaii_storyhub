@@ -250,59 +250,65 @@ button { cursor: pointer; }
     background: #6c63ff;
     color: white;
 }
-.write-container {
-    position: relative;
-    z-index: 10;
-}
 
 .write-container button {
     position: relative;
     z-index: 20;
 }
 .card {
+    position: relative;
+    z-index: 1;
     transition: 0.3s;
 }
 
 .card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    z-index: 2; /* maliit lang */
+}
+#modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+
+    justify-content: center;
+    align-items: center;
+
+    z-index: 99999;
+}
+
+.modal-content {
+    background: white;
+    width: 60%;
+    max-width: 700px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 20px;
+    border-radius: 12px;
+    position: relative;
+}
+
+.modal-content button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
 }
 </style>
 </head>
 
-<div id="modal" style="
-display:none;
-position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:rgba(0,0,0,0.7);
-justify-content:center;
-align-items:center;
-">
+<body>
 
-    <div style="
-    background:white;
-    width:60%;
-    max-height:80vh;
-    overflow-y:auto;
-    padding:20px;
-    border-radius:12px;
-    position:relative;
-    ">
+<div id="modal">
 
+    <div class="modal-content">
         <h2 id="modalUser"></h2>
-        <p id="modalText" style="white-space:pre-wrap;"></p>
+        <p id="modalText"></p>
 
-        <button onclick="closeM()" style="
-        position:absolute;
-        top:10px;
-        right:10px;
-        ">X</button>
-
+        <button onclick="closeM()">X</button>
     </div>
+
 </div>
 
-<body>
 <div class="overlay">
 
 <!-- AUTH -->
@@ -372,6 +378,16 @@ align-items:center;
 <script>
 
 let users = JSON.parse(localStorage.getItem("users") || "[]");
+if (!localStorage.getItem("stories")) {
+    localStorage.setItem("stories", JSON.stringify([
+        {
+            id: 1,
+            user: "Admin",
+            text: "Welcome to Story Hub!",
+            likes: 0
+        }
+    ]));
+}
 let stories = JSON.parse(localStorage.getItem("stories") || "[]");
 let current = localStorage.getItem("currentUser") || "";
 
@@ -403,8 +419,25 @@ function login(){
 	loadDraft();
     render();
     updateProfile();
+	refreshFeed();
+	
+	stories = JSON.parse(localStorage.getItem("stories") || "[]");
+    render();
+updateProfile();
+}
+function initApp(){
+    stories = JSON.parse(localStorage.getItem("stories") || "[]");
+
+    if(current){
+        auth.style.display="none";
+        app.style.display="block";
+        me.innerText = current;
+        render();
+        updateProfile();
+    }
 }
 
+initApp();
 function logout(){
     localStorage.removeItem("currentUser");
     location.reload();
@@ -448,6 +481,7 @@ function post(){
     save();
     render();
     updateProfile();
+	refreshFeed();
 }
 function render(){
     list.innerHTML="";
@@ -476,12 +510,14 @@ function like(id){
     s.likes++;
     save();
     render();
+	refreshFeed();
 }
 
 function del(id){
     stories = stories.filter(s=>s.id!==id);
     save();
     render();
+	refreshFeed();
 }
 
 function updateProfile(){
@@ -495,18 +531,18 @@ function openM(id){
     modalUser.innerText = s.user;
     modalText.innerText = s.text;
 
-    modal.style.display = "flex";
+    modal.style.display = "flex"; // 🔥 important
 }
 
+function closeM(){
+    modal.style.display = "none";
+}
 if(current){
     auth.style.display="none";
     app.style.display="block";
     me.innerText = current;
     render();
     updateProfile();
-}
-function closeM(){
-    modal.style.display = "none";
 }
 function setActiveTab(tabName) {
     document.querySelectorAll(".nav-btn").forEach(btn => {
@@ -594,7 +630,10 @@ function deleteDraft(id) {
 
     showDraft();
 }
-window.addEventListener("load", loadDraft);
+function refreshFeed(){
+    stories = JSON.parse(localStorage.getItem("stories") || "[]");
+    render();
+}
 </script>
 
 </body>
